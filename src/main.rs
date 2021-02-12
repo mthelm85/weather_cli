@@ -14,7 +14,9 @@ fn main() {
                     println!("Feels Like: {}°", r.main.feels_like);
                     println!("Humidity: {}%", r.main.humidity);
                     println!("Wind: {} mph", r.wind.speed);
-                    println!("Gust: {:?} mph", r.wind.gust);
+                    if let Some(n) = r.wind.gust {
+                        println!("Gust: {} mph", n);
+                    }
                     if input.daylight {
                         let sunrise = chrono::FixedOffset::east(r.timezone).timestamp(r.sys.sunrise, 0).format("%I:%M:%p");
                         let sunset = chrono::FixedOffset::east(r.timezone).timestamp(r.sys.sunset, 0).format("%I:%M:%p");
