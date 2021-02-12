@@ -1,37 +1,33 @@
 mod api_call;
-use chrono::offset::Utc;
 use chrono::TimeZone;
-use chrono::Local;
 mod user_input;
 
 fn main() {
     let input = user_input::get_user_input();
-    let jsonval = api_call::get_weather(&input.city, &input.state);
-    match jsonval {
-        Ok(v) => {
-            if v["cod"] == 200 {
-                println!("Current Conditions: {}", v["weather"][0]["description"]);
-                println!("Temperature: {}°", v["main"]["temp"]);
-                println!("Feels Like: {}°", v["main"]["feels_like"]);
-                println!("Humidity: {}%", v["main"]["humidity"]);
-                println!("Wind: {} mph", v["wind"]["speed"]);
-                println!("Gust: {} mph", v["wind"]["gust"]);
-                if input.daylight {
-                    let sunrise = match v["sys"]["sunrise"].as_i64() {
-                        Some(num) => Utc.timestamp(num, 0).with_timezone(&Local).time().format("%I:%M:%p"),
-                        None => Utc.timestamp(0,0).with_timezone(&Local).time().format("%I:%M:%p")
-                    };
-                    let sunset = match v["sys"]["sunset"].as_i64() {
-                        Some(num) => Utc.timestamp(num, 0).with_timezone(&Local).time().format("%I:%M:%p"),
-                        None => Utc.timestamp(0,0).with_timezone(&Local).time().format("%I:%M:%p")
-                    };
-                    println!("Sunrise: {}", sunrise);
-                    println!("Sunset: {}", sunset);
+    let res = api_call::get_weather(&input.city, &input.state);
+    match res {
+        Ok(r) => {
+            match r {
+                api_call::Response::Success(r) => {
+                    println!("Current Conditions: {}", r.weather[0].main);
+                    println!("Temperature: {}°", r.main.temp);
+                    println!("Feels Like: {}°", r.main.feels_like);
+                    println!("Humidity: {}%", r.main.humidity);
+                    println!("Wind: {} mph", r.wind.speed);
+                    println!("Gust: {:?} mph", r.wind.gust);
+                    if input.daylight {
+                        let sunrise = chrono::FixedOffset::east(r.timezone).timestamp(r.sys.sunrise, 0).format("%I:%M:%p");
+                        let sunset = chrono::FixedOffset::east(r.timezone).timestamp(r.sys.sunset, 0).format("%I:%M:%p");
+                        println!("Sunrise: {}", sunrise);
+                        println!("Sunset: {}", sunset);
+                    }
+                },
+                api_call::Response::Error(e) => {
+                    println!("Error: {}", e.message);
                 }
-            } else {
-                println!("Error: {}", v["message"])
+
             }
-        }
+        },
         Err(err) => println!("{:#?}", err)
     }
 }
